@@ -1,0 +1,21 @@
+.voirPlusWrapper {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.voirPlusButton {
+  display: inline-block;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: "[theme:themePrimary, default: #0078d4]";
+  border: 1px solid "[theme:themePrimary, default: #0078d4]";
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out;
+
+  &:hover {
+    background-color: "[theme:themeLighter, default: #deecf9]";
+    text-decoration: none;
+  }
+}

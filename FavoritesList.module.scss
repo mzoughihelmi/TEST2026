@@ -1,0 +1,11 @@
+.favoritesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.emptyState {
+  padding: 12px 4px;
+  color: "[theme:neutralSecondary, default: #605e5c]";
+  font-size: 13px;
+}
