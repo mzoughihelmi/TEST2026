@@ -1,0 +1,255 @@
+{{!--
+=====================================================================================
+  Espace documentaire GMF · PRJ0400867
+  Modèle PnP Modern Search v4 · Web part « Nouveautés de la famille » (repère D5)
+  Fichier : SiteAssets/pnp-templates/nouveautes-famille.html
+
+  Configuration attendue du web part PnP – Search Results (fiche technique §6.4) :
+    Source de données       : SharePoint Search
+    Modèle de requête       : RefinableString01:"{Page.GmfFamille}" RefinableString06:"Publié"
+                              RefinableDate02>={Today-30} ContentType:"Page documentation"
+    Propriétés sélectionnées: Title, Path, RefinableString01, RefinableString02, RefinableDate02
+    Tri                     : RefinableDate02 décroissant (tri par défaut)
+    Éléments par page       : 5 — pagination et nombre de résultats masqués
+    Disposition             : Personnalisé › URL du modèle externe = ce fichier
+    Titre du web part       : vide (le titre est généré par ce modèle)
+
+  Données utilisées :
+    RefinableString01 = Famille (GmfFamille)        RefinableString02 = Rubrique (GmfRubrique)
+    RefinableDate02   = Date de nouveauté           Title / Path      = titre et URL de la page
+
+  Différences avec le modèle de la fiche (§8) :
+    - Aucune nouveauté : titre « Nouveautés » sans nom de famille vide, lien « Tout voir » masqué
+      (la fiche produisait un lien ?famille= vide).
+    - Lien « Tout voir » relatif (Nouveautes.aspx dans SitePages) : plus d'URL /sites/DocGMF en dur,
+      le même fichier fonctionne en développement, recette et production.
+    - Rubrique inconnue : icône générique au lieu d'aucune icône.
+    - Squelette de chargement (placeholder) et en-têtes de tableau accessibles.
+=====================================================================================
+--}}
+
+<content id="data-content">
+    <style>
+        .nv {
+            font-family: inherit;
+            color: #323130;
+        }
+
+        /* En-tête : « Nouveautés Auto/2R » à gauche, « Tout voir » à droite */
+        .nv-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .nv-head h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            color: #323130;
+        }
+        .nv-head a {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f6b6f;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .nv-head a:hover,
+        .nv-head a:focus-visible {
+            text-decoration: underline;
+        }
+
+        /* Tableau : lignes séparées de 4 px, une ligne sur deux grisée */
+        .nv table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 4px;
+            table-layout: fixed;
+        }
+        .nv th {
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #605e5c;
+            padding: 4px 12px;
+        }
+        .nv td {
+            padding: 12px;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        .nv tbody tr:nth-child(odd) td {
+            background: #f3f5f6;
+        }
+
+        /* Colonne Date : barre bleue à gauche, format JJ/MM */
+        .nv th.nv-date,
+        .nv td.nv-date {
+            width: 60px;
+        }
+        .nv td.nv-date {
+            border-left: 3px solid #1f4e8c;
+            color: #605e5c;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Colonne Titre : lien vers la page */
+        .nv td.nv-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .nv td.nv-title a {
+            color: #323130;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .nv td.nv-title a:hover,
+        .nv td.nv-title a:focus-visible {
+            color: #1f6b6f;
+            text-decoration: underline;
+        }
+
+        /* Colonne Rubrique : pastille avec icône Fluent */
+        .nv th.nv-rub,
+        .nv td.nv-rub {
+            width: 170px;
+        }
+        .nv-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 100%;
+            padding: 3px 10px;
+            border: 1px solid #c8d6e5;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #1f4e8c;
+            background: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .nv-badge pnp-icon {
+            font-size: 13px;
+            flex: none;
+        }
+
+        .nv-empty {
+            font-size: 13px;
+            color: #605e5c;
+            padding: 12px 0;
+        }
+
+        /* Écran étroit : la colonne Rubrique se réduit */
+        @media (max-width: 480px) {
+            .nv th.nv-rub,
+            .nv td.nv-rub {
+                width: 120px;
+            }
+            .nv td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+
+    <div class="nv">
+        <div class="nv-head">
+            {{#if data.items.length}}
+                <h2>Nouveautés {{data.items.[0].RefinableString01}}</h2>
+                {{!-- Lien relatif : Nouveautes.aspx est dans la même bibliothèque SitePages que la page famille --}}
+                <a href="Nouveautes.aspx?famille={{encodeURI data.items.[0].RefinableString01}}"
+                   title="Voir toutes les nouveautés {{data.items.[0].RefinableString01}}">Tout voir</a>
+            {{else}}
+                <h2>Nouveautés</h2>
+            {{/if}}
+        </div>
+
+        {{#if data.items.length}}
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col" class="nv-date">Date</th>
+                        <th scope="col" class="nv-title">Titre</th>
+                        <th scope="col" class="nv-rub">Rubrique</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each data.items as |item|}}
+                        <tr>
+                            <td class="nv-date">
+                                <time datetime="{{item.RefinableDate02}}">{{getDate item.RefinableDate02 "DD/MM"}}</time>
+                            </td>
+                            <td class="nv-title">
+                                <a href="{{item.Path}}" title="{{item.Title}}">{{item.Title}}</a>
+                            </td>
+                            <td class="nv-rub">
+                                {{#if item.RefinableString02}}
+                                    <span class="nv-badge" title="{{item.RefinableString02}}">
+                                        {{#if (eq item.RefinableString02 "Doctrine")}}
+                                            <pnp-icon data-name="ReadingMode" aria-hidden="true"></pnp-icon>
+                                        {{else if (eq item.RefinableString02 "Compétences")}}
+                                            <pnp-icon data-name="Headset" aria-hidden="true"></pnp-icon>
+                                        {{else if (eq item.RefinableString02 "Doc. Contractuels")}}
+                                            <pnp-icon data-name="PageEdit" aria-hidden="true"></pnp-icon>
+                                        {{else if (eq item.RefinableString02 "FAQ")}}
+                                            <pnp-icon data-name="Unknown" aria-hidden="true"></pnp-icon>
+                                        {{else if (eq item.RefinableString02 "Interlocuteurs")}}
+                                            <pnp-icon data-name="People" aria-hidden="true"></pnp-icon>
+                                        {{else}}
+                                            <pnp-icon data-name="Page" aria-hidden="true"></pnp-icon>
+                                        {{/if}}
+                                        {{item.RefinableString02}}
+                                    </span>
+                                {{/if}}
+                            </td>
+                        </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        {{else}}
+            <div class="nv-empty">Aucune nouveauté sur la période.</div>
+        {{/if}}
+    </div>
+</content>
+
+{{!-- Affiché pendant l'exécution de la requête de recherche --}}
+<content id="placeholder-content">
+    <style>
+        .nv-ph-head {
+            height: 18px;
+            width: 180px;
+            margin-bottom: 16px;
+        }
+        .nv-ph-row {
+            height: 42px;
+            margin-bottom: 4px;
+        }
+        .nv-ph-head,
+        .nv-ph-row {
+            border-radius: 2px;
+            background: linear-gradient(90deg, #f3f5f6 0%, #e6eaed 50%, #f3f5f6 100%);
+            background-size: 200% 100%;
+            animation: nvShimmer 1.4s linear infinite;
+        }
+        @keyframes nvShimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .nv-ph-head,
+            .nv-ph-row {
+                animation: none;
+            }
+        }
+    </style>
+    <div aria-busy="true" aria-label="Chargement des nouveautés">
+        <div class="nv-ph-head"></div>
+        <div class="nv-ph-row"></div>
+        <div class="nv-ph-row"></div>
+        <div class="nv-ph-row"></div>
+    </div>
+</content>
