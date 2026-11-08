@@ -1,0 +1,22 @@
+J'ai aussi ajouté des lignes grisées animées pendant le chargement et des en-têtes de tableau accessibles.
+
+Mise en place
+
+1. Dépose le fichier dans SiteAssets/pnp-templates/, à la main ou avec la section 4 du script de la fiche.
+2. Dans le web part PnP – Search Results de la page famille, applique ces réglages (ils sont aussi rappelés en commentaire en haut du fichier) :
+   - Modèle de requête : RefinableString01:"{Page.GmfFamille}" RefinableString06:"Publié" RefinableDate02>={Today-30} ContentType:"Page documentation"
+   - Propriétés sélectionnées : Title, Path, RefinableString01, RefinableString02, RefinableDate02
+   - Tri : RefinableDate02 décroissant. Éléments par page : 5, pagination masquée.
+   - Disposition : Personnalisé, avec comme URL du modèle externe celle du fichier déposé.
+   - Titre du web part : vide.
+
+Points à vérifier en recette
+
+- Les propriétés gérées doivent d'abord être alimentées (contrôle §6.2). Sinon le bloc reste vide, sans message d'erreur.
+- La date : vérifie qu'une page datée d'aujourd'hui n'affiche pas la veille. C'est un décalage UTC classique avec getDate.
+- Les helpers eq, getDate, encodeURI et pnp-icon dépendent de la version de PnP installée. Le modèle est écrit pour la v4.
+- Le lien relatif suppose que Nouveautes.aspx est dans la même bibliothèque SitePages que les pages famille. C'est le cas dans la fiche.
+
+La page « Toutes les nouveautés » (Nouveautes.aspx, 20 par page, §6.8) aura besoin de son propre modèle. Je peux le créer, ou te faire une maquette du rendu de celui-ci.
+
+✻ Cogitated for 1m 7s · done 16:27
