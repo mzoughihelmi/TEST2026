@@ -14,28 +14,48 @@ export interface IFavoritesProviderProps {
 /**
  * Provider responsable de l'état "Mes Favoris" :
  *  - chargement initial des favoris de l'utilisateur connecté,
- *  - suppression optimiste d'un favori (clic sur l'étoile, avec rollback en cas d'erreur),
- *  - exposition du contexte aux composants enfants (FavoritesList, FavoriteItem, ...).
+ *  - suppression NON optimiste d'un favori : l'item reste affiché pendant l'appel serveur,
+ *    l'interface est bloquée (isBusy) et l'item n'est retiré qu'une fois la suppression confirmée,
+ *  - exposition du contexte aux composants enfants.
  */
 export const FavoritesProvider: React.FC<IFavoritesProviderProps> = (props) => {
   const { service, maxItems, children } = props;
 
   const [favorites, setFavorites] = React.useState<IFavoriteItem[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
-  const [error, setError] = React.useState<string | undefined>(undefined);
+  const [loadError, setLoadError] = React.useState<string | undefined>(undefined);
+  const [actionError, setActionError] = React.useState<string | undefined>(undefined);
+  const [removingId, setRemovingId] = React.useState<number | undefined>(undefined);
+
+  // Verrou synchrone : empêche deux suppressions simultanées même avant le re-render.
+  const busyRef = React.useRef<boolean>(false);
+  const isMountedRef = React.useRef<boolean>(true);
+
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const loadFavorites = React.useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    setError(undefined);
+    setLoadError(undefined);
     try {
       const items = await service.getMyFavorites(maxItems);
-      setFavorites(items);
+      if (isMountedRef.current) {
+        setFavorites(items);
+      }
     } catch (err: unknown) {
-      setError("Impossible de charger vos favoris. Veuillez réessayer.");
+      if (isMountedRef.current) {
+        setLoadError("Impossible de charger vos favoris. Veuillez réessayer.");
+      }
       // eslint-disable-next-line no-console
       console.error("[FavoritesProvider] loadFavorites", err);
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [service, maxItems]);
 
@@ -45,28 +65,44 @@ export const FavoritesProvider: React.FC<IFavoritesProviderProps> = (props) => {
 
   const removeFavorite = React.useCallback(
     async (itemId: number): Promise<void> => {
-      const previousFavorites = favorites;
-
-      // Mise à jour optimiste : l'item disparaît immédiatement de la liste.
-      setFavorites((current) => current.filter((item) => item.id !== itemId));
+      if (busyRef.current) {
+        return;
+      }
+      busyRef.current = true;
+      setActionError(undefined);
+      setRemovingId(itemId);
 
       try {
         await service.removeFavorite(itemId);
+        if (isMountedRef.current) {
+          setFavorites((current) => current.filter((item) => item.id !== itemId));
+        }
       } catch (err: unknown) {
-        // Échec côté serveur : on restaure l'état précédent et on signale l'erreur.
-        setFavorites(previousFavorites);
-        setError("Impossible de retirer ce favori. Veuillez réessayer.");
+        if (isMountedRef.current) {
+          setActionError("Impossible de retirer ce favori. Veuillez réessayer.");
+        }
         // eslint-disable-next-line no-console
         console.error("[FavoritesProvider] removeFavorite", err);
+      } finally {
+        busyRef.current = false;
+        if (isMountedRef.current) {
+          setRemovingId(undefined);
+        }
       }
     },
-    [favorites, service]
+    [service]
   );
+
+  const clearActionError = React.useCallback((): void => setActionError(undefined), []);
 
   const contextValue: IFavoritesContext = {
     favorites,
     isLoading,
-    error,
+    loadError,
+    actionError,
+    clearActionError,
+    removingId,
+    isBusy: removingId !== undefined,
     removeFavorite,
     refresh: loadFavorites
   };
