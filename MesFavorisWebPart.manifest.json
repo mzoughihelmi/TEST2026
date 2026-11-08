@@ -18,6 +18,7 @@
       "officeFabricIconFontName": "FavoriteStar",
       "properties": {
         "title": "Mes favoris",
+        "listTitle": "MesFavoris",
         "maxItems": 5,
         "voirPlusUrl": "",
         "voirPlusLabel": "Voir tous mes favoris"
