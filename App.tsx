@@ -140,6 +140,32 @@ export const App: React.FC<IAppProps> = (props) => {
   );
   const locale = props.context.pageContext.cultureInfo.currentUICultureName || "fr-FR";
 
+  // "Voir tous" : URL saisie dans le volet si renseignée, sinon lien automatique vers la liste
+  // des favoris filtrée (utilisateur connecté + famille de la page).
+  const [autoVoirPlusUrl, setAutoVoirPlusUrl] = React.useState<string>("");
+  React.useEffect(() => {
+    if (props.voirPlusUrl) {
+      return;
+    }
+    let cancelled = false;
+    service
+      .getAllFavoritesUrl()
+      .then((url) => {
+        if (!cancelled) {
+          setAutoVoirPlusUrl(url);
+        }
+      })
+      .catch((err: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("[App] getAllFavoritesUrl", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [service, props.voirPlusUrl]);
+
+  const voirPlusUrl = props.voirPlusUrl || autoVoirPlusUrl;
+
   return (
     <ThemeProvider
       theme={props.themeVariant as unknown as PartialTheme}
@@ -148,7 +174,7 @@ export const App: React.FC<IAppProps> = (props) => {
       <FavoritesProvider service={service} maxItems={props.maxItems}>
         <FavoritesView
           title={props.title}
-          voirPlusUrl={props.voirPlusUrl}
+          voirPlusUrl={voirPlusUrl}
           voirPlusLabel={props.voirPlusLabel}
           locale={locale}
         />
