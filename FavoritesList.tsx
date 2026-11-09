@@ -1,8 +1,6 @@
 import * as React from "react";
 import {
-  ShimmeredDetailsList
-} from "@fluentui/react/lib/ShimmeredDetailsList";
-import {
+  DetailsList,
   IColumn,
   SelectionMode,
   DetailsListLayoutMode,
@@ -15,6 +13,7 @@ import { Icon } from "@fluentui/react/lib/Icon";
 import { Stack } from "@fluentui/react/lib/Stack";
 import { TooltipHost } from "@fluentui/react/lib/Tooltip";
 import { MessageBar, MessageBarType } from "@fluentui/react/lib/MessageBar";
+import { Spinner, SpinnerSize } from "@fluentui/react/lib/Spinner";
 import { DefaultButton } from "@fluentui/react/lib/Button";
 import { mergeStyleSets } from "@fluentui/react/lib/Styling";
 import { useTheme } from "@fluentui/react/lib/Theme";
@@ -81,7 +80,7 @@ export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
         key: "title",
         name: "Titre",
         fieldName: "title",
-        minWidth: 150,
+        minWidth: 220,
         maxWidth: 350,
         isResizable: true,
         onRender: (item: IFavoriteItem) => (
@@ -102,7 +101,7 @@ export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
         key: "created",
         name: "Date de création",
         fieldName: "created",
-        minWidth: 110,
+        minWidth: 120,
         maxWidth: 160,
         isResizable: true,
         isSorted: true,
@@ -119,7 +118,8 @@ export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
         key: "link",
         name: "Lien",
         fieldName: "pageUrl",
-        minWidth: 150,
+        minWidth: 240,
+        maxWidth: 400,
         isResizable: true,
         onRender: (item: IFavoriteItem) =>
           item.pageUrl ? (
@@ -180,7 +180,17 @@ export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
     );
   }
 
-  if (!isLoading && favorites.length === 0) {
+  if (isLoading) {
+    return (
+      <Spinner
+        size={SpinnerSize.medium}
+        label="Chargement de vos favoris..."
+        styles={{ root: { padding: "24px 0" } }}
+      />
+    );
+  }
+
+  if (favorites.length === 0) {
     return (
       <Stack horizontalAlign="center" tokens={{ childrenGap: 8 }} className={classes.empty}>
         <Icon iconName="FavoriteStar" className={classes.emptyIcon} />
@@ -190,18 +200,19 @@ export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
   }
 
   return (
-    <ShimmeredDetailsList
+    <DetailsList
       items={favorites}
       columns={columns}
-      enableShimmer={isLoading}
-      shimmerLines={3}
       getKey={(item: IFavoriteItem) => String(item.id)}
       setKey="mesFavoris"
       selectionMode={SelectionMode.none}
       checkboxVisibility={CheckboxVisibility.hidden}
-      layoutMode={DetailsListLayoutMode.justified}
+      // Colonnes à largeur fixe : évite le recalcul en boucle des largeurs ("justified")
+      // qui faisait bouger la liste en continu dans la page SharePoint.
+      layoutMode={DetailsListLayoutMode.fixedColumns}
+      // 5 à 10 lignes seulement : pas de virtualisation, donc pas de re-mesure permanente.
+      onShouldVirtualize={() => false}
       compact={false}
-      ariaLabelForShimmer="Chargement de vos favoris"
       ariaLabelForGrid="Mes favoris"
     />
   );
