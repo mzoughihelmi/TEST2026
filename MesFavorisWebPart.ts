@@ -66,37 +66,3 @@ export default class MesFavorisWebPart extends BaseClientSideWebPart<IMesFavoris
     };
   }
 }
-
-  protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-    return {
-      pages: [
-        {
-          header: { description: strings.PropertyPaneDescription },
-          groups: [
-            {
-              groupName: strings.BasicGroupName,
-              groupFields: [
-                PropertyPaneTextField("title", {
-                  label: strings.TitleFieldLabel
-                }),
-                PropertyPaneSlider("maxItems", {
-                  label: strings.MaxItemsFieldLabel,
-                  min: 1,
-                  max: 10,
-                  value: 5
-                }),
-                PropertyPaneTextField("voirPlusUrl", {
-                  label: strings.VoirPlusUrlFieldLabel,
-                  description: strings.VoirPlusUrlFieldDescription
-                }),
-                PropertyPaneTextField("voirPlusLabel", {
-                  label: strings.VoirPlusLabelFieldLabel
-                })
-              ]
-            }
-          ]
-        }
-      ]
-    };
-  }
-}
