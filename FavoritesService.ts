@@ -172,24 +172,28 @@ export class FavoritesService implements IFavoritesService {
 
   /**
    * Ajoute un favori dans la liste pour l'utilisateur connecté.
-   * - Title = favorite.title ; URL = { Url: favorite.url, Description: favorite.description ?? title } ;
+   * - Title = favorite.title ; URL = { Url: favorite.url.Url, Description: favorite.url.Description ?? title } ;
    * - colonne famille = favorite.famille, ou à défaut la famille de la page actuelle ;
    * - anti-doublon : si l'utilisateur a déjà un favori vers la même URL, il est retourné tel quel.
    * "Créé par" et "Créé" sont renseignés automatiquement par SharePoint.
    */
   public async addFavorite(favorite: INewFavorite): Promise<IFavoriteItem> {
     const title = favorite.title?.trim();
-    const url = favorite.url?.trim();
+    // Champ Lien hypertexte : { Url, Description }.
+    const url = favorite.url?.Url?.trim();
     if (!title || !url) {
-      throw new Error("addFavorite : le titre et l'URL du favori sont obligatoires.");
+      throw new Error("addFavorite : le titre et l'URL (url.Url) du favori sont obligatoires.");
     }
-    const description = favorite.description?.trim() || title;
+    const description = favorite.url.Description?.trim() || title;
 
     const list = this._sp.web.lists.getByTitle(this._listTitle);
 
-    const [currentUser, familleValues] = await Promise.all([
+    // Famille : valeur fournie, sinon celle de la page actuelle (première valeur si la page en a plusieurs).
+    const [currentUser, famille] = await Promise.all([
       this._sp.web.currentUser(),
-      favorite.famille ? Promise.resolve(favorite.famille) : this._getCurrentPageValues()
+      favorite.famille !== undefined
+        ? Promise.resolve(favorite.famille.trim())
+        : this._getCurrentPageValues().then((values) => values[0] ?? "")
     ]);
 
     // Anti-doublon : même utilisateur + même URL de page.
@@ -216,11 +220,8 @@ export class FavoritesService implements IFavoritesService {
     if (localisation) {
       values[LOCALISATION_FIELD] = localisation;
     }
-    const famille = familleValues.filter((v) => v !== "");
-    if (famille.length === 1) {
-      values[FAVORITES_FILTER_FIELD] = famille[0];
-    } else if (famille.length > 1) {
-      // Colonne Choix à sélection multiple.
+    // Colonne famille de la liste des favoris : champ texte (une ligne).
+    if (famille) {
       values[FAVORITES_FILTER_FIELD] = famille;
     }
 
