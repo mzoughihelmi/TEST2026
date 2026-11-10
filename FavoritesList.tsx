@@ -1,173 +1,140 @@
 import * as React from "react";
-//
-import {
-  DetailsList,
-  IColumn,
-  SelectionMode,
-  DetailsListLayoutMode,
-  CheckboxVisibility
-} from "@fluentui/react/lib/DetailsList";
-import { IconButton } from "@fluentui/react/lib/Button";
-import { Link } from "@fluentui/react/lib/Link";
-import { Text } from "@fluentui/react/lib/Text";
 import { Icon } from "@fluentui/react/lib/Icon";
-import { Stack } from "@fluentui/react/lib/Stack";
-import { TooltipHost } from "@fluentui/react/lib/Tooltip";
-import { MessageBar, MessageBarType } from "@fluentui/react/lib/MessageBar";
 import { Spinner, SpinnerSize } from "@fluentui/react/lib/Spinner";
+import { MessageBar, MessageBarType } from "@fluentui/react/lib/MessageBar";
 import { DefaultButton } from "@fluentui/react/lib/Button";
 import { mergeStyleSets } from "@fluentui/react/lib/Styling";
-import { useTheme } from "@fluentui/react/lib/Theme";
 import { useFavorites } from "../../context/FavoritesContext";
-import { IFavoriteItem } from "../../models/IFavoriteItem";
-
-export interface IFavoritesListProps {
-  /** Culture de la page SharePoint (ex. "fr-FR"), utilisée pour formater les dates. */
-  locale: string;
-}
-
-const formatDate = (iso: string, locale: string, withTime: boolean): string => {
-  if (!iso) {
-    return "";
-  }
-  const date = new Date(iso);
-  if (isNaN(date.getTime())) {
-    return "";
-  }
-  return date.toLocaleString(
-    locale,
-    withTime
-      ? { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }
-      : { day: "numeric", month: "short", year: "numeric" }
-  );
-};
 
 /**
- * Affiche les favoris dans une vue de liste Fluent UI (DetailsList), au plus proche
- * des vues de listes SharePoint : en-têtes Titre / Date de création / Lien,
- * effet "shimmer" pendant le chargement et étoile pour retirer un favori.
+ * Couleurs relevées sur la maquette de la homepage famille (feuille de route p. 9, repère ⑥).
  */
-export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
-  const { favorites, isLoading, loadError, refresh, removeFavorite, removingId, isBusy } = useFavorites();
-  const theme = useTheme();
+const GMF_BLEU = "#004696"; // barre verticale à gauche de chaque ligne
+const GMF_PETROLE = "#2e6f76"; // étoile
+const GMF_TEXTE = "#2e3a48"; // titres
+const GMF_TEXTE_SECONDAIRE = "#414c58"; // localisation
+const GMF_ENTETE = "#323e4b"; // en-têtes de colonnes
+const GMF_FOND_LIGNE = "#f5f8f8"; // une ligne sur deux
+const GMF_SEPARATEUR = "#edebe9";
 
-  const classes = React.useMemo(
-    () =>
-      mergeStyleSets({
-        cellText: {
-          display: "block",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap"
-        },
-        secondary: {
-          color: theme.semanticColors.bodySubtext
-        },
-        empty: {
-          padding: "24px 8px",
-          color: theme.semanticColors.bodySubtext
-        },
-        emptyIcon: {
-          fontSize: 28,
-          color: theme.palette.neutralTertiary
-        }
-      }),
-    [theme]
-  );
-
-  const columns: IColumn[] = React.useMemo(
-    (): IColumn[] => [
-      {
-        key: "title",
-        name: "Titre",
-        fieldName: "title",
-        minWidth: 220,
-        maxWidth: 350,
-        isResizable: true,
-        onRender: (item: IFavoriteItem) => (
-          <Link
-            href={item.pageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-interception="off"
-            title={item.title}
-            className={classes.cellText}
-            styles={{ root: { fontWeight: 600, color: theme.semanticColors.bodyText } }}
-          >
-            {item.title}
-          </Link>
-        )
-      },
-      {
-        key: "created",
-        name: "Date de création",
-        fieldName: "created",
-        minWidth: 120,
-        maxWidth: 160,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: true,
-        onRender: (item: IFavoriteItem) => (
-          <TooltipHost content={formatDate(item.created, locale, true)}>
-            <span className={`${classes.cellText} ${classes.secondary}`}>
-              {formatDate(item.created, locale, false)}
-            </span>
-          </TooltipHost>
-        )
-      },
-      {
-        key: "link",
-        name: "Lien",
-        fieldName: "pageUrl",
-        minWidth: 240,
-        maxWidth: 400,
-        isResizable: true,
-        onRender: (item: IFavoriteItem) =>
-          item.pageUrl ? (
-            <Link
-              href={item.pageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-interception="off"
-              title={item.pageUrl}
-              className={classes.cellText}
-            >
-              {item.linkLabel}
-            </Link>
-          ) : (
-            <span className={classes.secondary}>—</span>
-          )
-      },
-      {
-        // Étoile en dernière colonne (à droite) : retire le favori.
-        key: "favorite",
-        name: "Favori",
-        iconName: "FavoriteStarFill",
-        isIconOnly: true,
-        minWidth: 32,
-        maxWidth: 32,
-        onRender: (item: IFavoriteItem) => (
-          <IconButton
-            iconProps={{ iconName: "FavoriteStarFill" }}
-            title="Retirer des favoris"
-            ariaLabel={`Retirer « ${item.title} » des favoris`}
-            disabled={isBusy}
-            onClick={() => {
-              removeFavorite(item.id).catch(() => undefined);
-            }}
-            styles={{
-              root: { height: 24, width: 24, marginTop: -4 },
-              icon: { color: "#ffb900", fontSize: 16 },
-              iconHovered: { color: "#d29200" },
-              rootDisabled: { backgroundColor: "transparent" },
-              iconDisabled: { color: "#ffb900", opacity: item.id === removingId ? 1 : 0.5 }
-            }}
-          />
-        )
+const classes = mergeStyleSets({
+  table: {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    tableLayout: "fixed"
+  },
+  th: {
+    textAlign: "left",
+    fontSize: 12,
+    fontWeight: 600,
+    color: GMF_ENTETE,
+    padding: "10px 16px",
+    whiteSpace: "nowrap"
+  },
+  thTitle: {
+    paddingLeft: 32
+  },
+  thStar: {
+    width: 48
+  },
+  row: {
+    selectors: {
+      ":nth-child(odd) td": { backgroundColor: GMF_FOND_LIGNE }
+    }
+  },
+  td: {
+    fontSize: 13,
+    lineHeight: "20px",
+    padding: "12px 16px",
+    borderBottom: `1px solid ${GMF_SEPARATEUR}`,
+    verticalAlign: "middle",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap"
+  },
+  tdTitle: {
+    position: "relative",
+    paddingLeft: 32,
+    selectors: {
+      // Barre bleue arrondie, centrée verticalement, à gauche de la ligne.
+      "::before": {
+        content: '""',
+        position: "absolute",
+        left: 8,
+        top: 9,
+        bottom: 9,
+        width: 3,
+        borderRadius: 2,
+        backgroundColor: GMF_BLEU
       }
-    ],
-    [classes, theme, locale, isBusy, removingId, removeFavorite]
-  );
+    }
+  },
+  tdLocalisation: {
+    color: GMF_TEXTE_SECONDAIRE,
+    borderLeft: `1px solid ${GMF_SEPARATEUR}`
+  },
+  tdStar: {
+    width: 48,
+    textAlign: "center",
+    padding: "0 8px"
+  },
+  titleLink: {
+    color: GMF_TEXTE,
+    fontWeight: 500,
+    textDecoration: "none",
+    selectors: {
+      ":hover, :focus-visible": { color: GMF_PETROLE, textDecoration: "underline" }
+    }
+  },
+  starButton: {
+    width: 28,
+    height: 28,
+    padding: 0,
+    border: "none",
+    borderRadius: 2,
+    background: "transparent",
+    color: GMF_PETROLE,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    selectors: {
+      ":hover:not(:disabled)": { backgroundColor: "#e6eff0" },
+      ":focus-visible": { outline: `2px solid ${GMF_BLEU}`, outlineOffset: 1 },
+      ":disabled": { cursor: "default", opacity: 0.5 }
+    }
+  },
+  starRemoving: {
+    selectors: { ":disabled": { opacity: 1 } }
+  },
+  starIcon: {
+    fontSize: 14
+  },
+  empty: {
+    padding: "12px 0",
+    fontSize: 13,
+    color: "#605e5c"
+  }
+});
+
+/**
+ * Affichage "page famille de produit" (homepage famille, repère ⑥ — feuille de route p. 9) :
+ * tableau Titre / Localisation / ★. Le titre ouvre le lien du favori dans un nouvel onglet ;
+ * l'étoile retire le favori (spinner bloquant géré par App pendant la suppression).
+ */
+export const FavoritesList: React.FC = () => {
+  const { favorites, isLoading, loadError, refresh, removeFavorite, removingId, isBusy } = useFavorites();
+
+  if (isLoading) {
+    return (
+      <Spinner
+        size={SpinnerSize.medium}
+        label="Chargement de vos favoris..."
+        styles={{ root: { padding: "24px 0" } }}
+      />
+    );
+  }
 
   if (loadError) {
     return (
@@ -181,40 +148,62 @@ export const FavoritesList: React.FC<IFavoritesListProps> = ({ locale }) => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <Spinner
-        size={SpinnerSize.medium}
-        label="Chargement de vos favoris..."
-        styles={{ root: { padding: "24px 0" } }}
-      />
-    );
-  }
-
   if (favorites.length === 0) {
-    return (
-      <Stack horizontalAlign="center" tokens={{ childrenGap: 8 }} className={classes.empty}>
-        <Icon iconName="FavoriteStar" className={classes.emptyIcon} />
-        <Text variant="medium">Aucun favori pour cette page.</Text>
-      </Stack>
-    );
+    return <div className={classes.empty}>Aucun favori pour cette famille.</div>;
   }
 
   return (
-    <DetailsList
-      items={favorites}
-      columns={columns}
-      getKey={(item: IFavoriteItem) => String(item.id)}
-      setKey="mesFavoris"
-      selectionMode={SelectionMode.none}
-      checkboxVisibility={CheckboxVisibility.hidden}
-      // Colonnes à largeur fixe : évite le recalcul en boucle des largeurs ("justified")
-      // qui faisait bouger la liste en continu dans la page SharePoint.
-      layoutMode={DetailsListLayoutMode.fixedColumns}
-      // 5 à 10 lignes seulement : pas de virtualisation, donc pas de re-mesure permanente.
-      onShouldVirtualize={() => false}
-      compact={false}
-      ariaLabelForGrid="Mes favoris"
-    />
+    <table className={classes.table} aria-label="Mes favoris">
+      <thead>
+        <tr>
+          <th scope="col" className={`${classes.th} ${classes.thTitle}`}>
+            Titre
+          </th>
+          <th scope="col" className={classes.th}>
+            Localisation
+          </th>
+          <th scope="col" className={`${classes.th} ${classes.thStar}`}>
+            <span className="ms-hiddenVisually" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+              Retirer
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {favorites.map((item) => (
+          <tr key={item.id} className={classes.row}>
+            <td className={`${classes.td} ${classes.tdTitle}`}>
+              <a
+                className={classes.titleLink}
+                href={item.pageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-interception="off"
+                title={item.title}
+              >
+                {item.title}
+              </a>
+            </td>
+            <td className={`${classes.td} ${classes.tdLocalisation}`} title={item.localisation}>
+              {item.localisation}
+            </td>
+            <td className={`${classes.td} ${classes.tdStar}`}>
+              <button
+                type="button"
+                className={`${classes.starButton} ${item.id === removingId ? classes.starRemoving : ""}`}
+                title="Retirer des favoris"
+                aria-label={`Retirer « ${item.title} » des favoris`}
+                disabled={isBusy}
+                onClick={() => {
+                  removeFavorite(item.id).catch(() => undefined);
+                }}
+              >
+                <Icon iconName="FavoriteStarFill" className={classes.starIcon} />
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 };
