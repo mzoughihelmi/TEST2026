@@ -10,4 +10,6 @@ export interface IFavoriteItem {
   linkLabel: string;
   /** Date de création ISO, utile pour un tri ou un affichage futur. */
   created: string;
+  /** Emplacement du favori dans l'arborescence (colonne "Odysse_Localisation"), ex. "Auto Pass > Règles de gestion". */
+  localisation: string;
 }
