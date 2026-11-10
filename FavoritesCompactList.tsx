@@ -5,9 +5,16 @@ import { DefaultButton } from "@fluentui/react/lib/Button";
 import { mergeStyleSets } from "@fluentui/react/lib/Styling";
 import { useFavorites } from "../../context/FavoritesContext";
 
-/** Couleurs GMF de la maquette (homepage documentation, feuille de route p. 8). */
-const GMF_PETROLE = "#1f6b6f";
-const GMF_BLEU = "#1f4e8c";
+/**
+ * Couleurs relevées sur la maquette (homepage documentation, feuille de route p. 8).
+ *  - barre : turquoise, bleu foncé sur la ligne active (survol / focus) ;
+ *  - texte : gris ardoise ;  fond de la ligne active : gris-vert très clair ;  séparateur : gris clair.
+ */
+const GMF_TURQUOISE = "#008697";
+const GMF_BLEU = "#004696";
+const GMF_TEXTE = "#2e3a48";
+const GMF_FOND_ACTIF = "#f5f8f8";
+const GMF_SEPARATEUR = "#f3f2f1";
 
 const classes = mergeStyleSets({
   list: {
@@ -16,28 +23,42 @@ const classes = mergeStyleSets({
     padding: 0
   },
   item: {
-    borderBottom: "1px solid #edebe9"
+    // Trait clair sous chaque ligne + petit espace avant la suivante (comme la maquette).
+    borderBottom: `1px solid ${GMF_SEPARATEUR}`,
+    marginBottom: 4
   },
   link: {
+    position: "relative",
     display: "flex",
     alignItems: "center",
-    minHeight: 48,
-    padding: "8px 16px 8px 20px",
-    borderLeft: `3px solid ${GMF_PETROLE}`,
-    color: "#323130",
-    fontSize: 13,
-    lineHeight: "18px",
+    minHeight: 52,
+    padding: "8px 16px 8px 28px",
+    color: GMF_TEXTE,
+    fontSize: 14,
+    fontWeight: 500,
+    lineHeight: "20px",
     textDecoration: "none",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
     transition: "background-color .1s ease",
     selectors: {
+      // Barre verticale : petit trait arrondi, centré, décollé du bord gauche.
+      "::before": {
+        content: '""',
+        position: "absolute",
+        left: 7,
+        top: 9,
+        bottom: 9,
+        width: 4,
+        borderRadius: 2,
+        backgroundColor: GMF_TURQUOISE,
+        transition: "background-color .1s ease"
+      },
       ":hover, :focus-visible": {
-        backgroundColor: "#f3f5f6",
-        borderLeftColor: GMF_BLEU,
-        color: "#323130",
+        backgroundColor: GMF_FOND_ACTIF,
+        color: GMF_TEXTE,
         textDecoration: "none"
+      },
+      ":hover::before, :focus-visible::before": {
+        backgroundColor: GMF_BLEU
       },
       ":focus-visible": {
         outline: `2px solid ${GMF_BLEU}`,
