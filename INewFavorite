@@ -1,14 +1,23 @@
 /**
+ * Valeur d'un champ SharePoint de type Lien hypertexte (colonne "URL") :
+ * même forme que celle lue / écrite par l'API REST.
+ */
+export interface IUrlFieldValue {
+  /** Adresse du lien (obligatoire). */
+  Url: string;
+  /** Texte affiché du lien. Par défaut : le titre du favori. */
+  Description?: string;
+}
+
+/**
  * Données nécessaires pour créer un favori dans la liste SharePoint.
  * L'auteur (Créé par) et la date de création sont renseignés automatiquement par SharePoint.
  */
 export interface INewFavorite {
   /** Titre du favori (colonne Title). */
   title: string;
-  /** URL de la page cible (champ Hyperlien "URL" › Url). */
-  url: string;
-  /** Texte affiché du lien (champ Hyperlien "URL" › Description). Par défaut : le titre. */
-  description?: string;
+  /** Champ Lien hypertexte "URL" : adresse + description, ex. { Url: "https://…", Description: "Demander un congé" }. */
+  url: IUrlFieldValue;
   /** Emplacement dans l'arborescence (colonne "Odysse_Localisation"), ex. "Auto Pass > Règles de gestion". */
   localisation?: string;
   /**
