@@ -92,22 +92,22 @@ const FavoritesView: React.FC<IFavoritesViewProps> = (props) => {
     },
     homeTitle: {
       margin: 0,
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: 600,
-      lineHeight: "22px",
-      color: "#323130",
+      lineHeight: "24px",
+      color: "#2e3a48",
       overflow: "hidden",
       textOverflow: "ellipsis",
       whiteSpace: "nowrap"
     },
     homeLink: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: 600,
-      color: "#1f6b6f",
+      color: "#2e6f76",
       textDecoration: "none",
       whiteSpace: "nowrap",
       selectors: {
-        ":hover, :focus-visible": { textDecoration: "underline", color: "#1f6b6f" }
+        ":hover, :focus-visible": { textDecoration: "underline", color: "#2e6f76" }
       }
     }
   });
