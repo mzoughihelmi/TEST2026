@@ -19,6 +19,8 @@ export interface IFavoritesService {
    * le favori existant est retourné.
    */
   addFavorite(favorite: INewFavorite): Promise<IFavoriteItem>;
+  /** Famille(s) de la page actuelle (vide si la page n'en a pas). */
+  getCurrentPageFamily(): Promise<string[]>;
   /** Supprime un favori de la liste SharePoint. */
   removeFavorite(itemId: number): Promise<void>;
 }
