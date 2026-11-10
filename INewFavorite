@@ -21,8 +21,8 @@ export interface INewFavorite {
   /** Emplacement dans l'arborescence (colonne "Odysse_Localisation"), ex. "Auto Pass > Règles de gestion". */
   localisation?: string;
   /**
-   * Valeur(s) de famille à enregistrer sur le favori.
+   * Famille à enregistrer sur le favori (colonne texte de la liste des favoris), ex. "Auto/2R".
    * Si non fourni : reprend automatiquement la famille de la page actuelle.
    */
-  famille?: string[];
+  famille?: string;
 }
