@@ -25,6 +25,15 @@ const PAGE_FILTER_FIELD = "Thematique";
  */
 const FAVORITES_FILTER_FIELD = "Thematique";
 
+/**
+ * Nom INTERNE de la colonne "Localisation" de la liste des favoris (texte, ex. "Auto Pass > Règles de gestion"),
+ * affichée dans la colonne "Localisation" sur la page famille.
+ */
+const LOCALISATION_FIELD = "Odysse_Localisation";
+
+/** Colonnes lues pour chaque favori. */
+const FAVORITE_FIELDS = ["Id", "Title", "URL", "Created", LOCALISATION_FIELD];
+
 /** Échappe une valeur pour un littéral OData ('l'équipe' → 'l''équipe'). */
 const odataString = (value: string): string => `'${value.replace(/'/g, "''")}'`;
 
@@ -117,7 +126,7 @@ export class FavoritesService implements IFavoritesService {
 
     const items = await this._sp.web.lists
       .getByTitle(this._listTitle)
-      .items.select("Id", "Title", "URL", "Created")
+      .items.select(...FAVORITE_FIELDS)
       .filter(filter)
       .orderBy("Created", false)
       .top(top)();
@@ -187,7 +196,7 @@ export class FavoritesService implements IFavoritesService {
     // Une colonne Lien hypertexte ne peut pas être filtrée en OData : on filtre sur l'auteur
     // côté serveur, puis on compare l'URL côté client (insensible à la casse).
     const myItems = await list.items
-      .select("Id", "Title", "URL", "Created")
+      .select(...FAVORITE_FIELDS)
       .filter(`AuthorId eq ${currentUser.Id}`)
       .top(5000)();
     const normalizedUrl = url.toLowerCase();
@@ -203,6 +212,10 @@ export class FavoritesService implements IFavoritesService {
       Title: title,
       URL: { Url: url, Description: description }
     };
+    const localisation = favorite.localisation?.trim();
+    if (localisation) {
+      values[LOCALISATION_FIELD] = localisation;
+    }
     const famille = familleValues.filter((v) => v !== "");
     if (famille.length === 1) {
       values[FAVORITES_FILTER_FIELD] = famille[0];
@@ -218,7 +231,8 @@ export class FavoritesService implements IFavoritesService {
       Id: result.data.Id,
       Title: title,
       URL: { Url: url, Description: description },
-      Created: result.data.Created
+      Created: result.data.Created,
+      [LOCALISATION_FIELD]: localisation ?? ""
     });
   }
 
@@ -230,8 +244,29 @@ export class FavoritesService implements IFavoritesService {
       title: item.Title,
       pageUrl: item.URL?.Url ?? "",
       linkLabel: item.URL?.Description || item.URL?.Url || "",
-      created: item.Created
+      created: item.Created,
+      localisation: FavoritesService._fieldText(item[LOCALISATION_FIELD])
     };
+  }
+
+  /** Texte d'une colonne : texte simple, ou libellé si la colonne renvoie un objet (métadonnée gérée, recherche). */
+  private static _fieldText(value: unknown): string {
+    if (typeof value === "string") {
+      return value;
+    }
+    if (value && typeof value === "object") {
+      const obj = value as { Label?: string; Title?: string };
+      return obj.Label || obj.Title || "";
+    }
+    return "";
+  }
+
+  /**
+   * Famille(s) de la page actuelle (colonne PAGE_FILTER_FIELD), utilisée(s) pour le titre
+   * « Mes favoris Auto/2R » et le lien « Tous mes favoris Auto/2R ». Vide hors d'une page famille.
+   */
+  public getCurrentPageFamily(): Promise<string[]> {
+    return this._getCurrentPageValues();
   }
 
   public async removeFavorite(itemId: number): Promise<void> {
