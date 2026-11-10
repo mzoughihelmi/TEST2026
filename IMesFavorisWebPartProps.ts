@@ -1,4 +1,8 @@
+export type FavoritesDisplayMode = "accueil" | "famille";
+
 export interface IMesFavorisWebPartProps {
+  /** Emplacement du web part ("famille" par défaut). */
+  displayMode: FavoritesDisplayMode;
   /** Titre affiché du web part ("Mes favoris" par défaut si vide). */
   title: string;
   /** Titre de la liste SharePoint des favoris ("MesFavoris" par défaut si vide). */
