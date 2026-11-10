@@ -2,8 +2,6 @@ import * as React from "react";
 import type { WebPartContext } from "@microsoft/sp-webpart-base";
 import type { IReadonlyTheme } from "@microsoft/sp-component-base";
 import { ThemeProvider, PartialTheme, useTheme } from "@fluentui/react/lib/Theme";
-import { Stack } from "@fluentui/react/lib/Stack";
-import { Text } from "@fluentui/react/lib/Text";
 import { Overlay } from "@fluentui/react/lib/Overlay";
 import { Spinner, SpinnerSize } from "@fluentui/react/lib/Spinner";
 import { MessageBar, MessageBarType } from "@fluentui/react/lib/MessageBar";
@@ -13,7 +11,6 @@ import { useFavorites } from "../../context/FavoritesContext";
 import { FavoritesService } from "../../services/FavoritesService";
 import { FavoritesList } from "../FavoritesList/FavoritesList";
 import { FavoritesCompactList } from "../FavoritesCompactList/FavoritesCompactList";
-import { VoirPlusButton } from "../VoirPlusButton/VoirPlusButton";
 import { FavoritesDisplayMode } from "../../models/IMesFavorisWebPartProps";
 
 export interface IAppProps {
@@ -30,12 +27,17 @@ export interface IAppProps {
   voirPlusLabel: string;
 }
 
+/** Libellés par défaut de la page famille (maquette p. 9) ; la famille de la page y est ajoutée. */
+const DEFAULT_FAMILY_TITLE = "Mes favoris";
+const DEFAULT_FAMILY_LINK_LABEL = "Tous mes favoris";
+
 interface IFavoritesViewProps {
   displayMode: FavoritesDisplayMode;
   title: string;
   voirPlusUrl: string;
   voirPlusLabel: string;
-  locale: string;
+  /** Famille(s) de la page actuelle, ex. "Auto/2R" (vide sur la page d'accueil). */
+  famille: string;
 }
 
 /**
@@ -112,6 +114,18 @@ const FavoritesView: React.FC<IFavoritesViewProps> = (props) => {
     }
   });
 
+  // Page famille : la famille de la page est ajoutée au titre et au libellé du lien.
+  //   Titre : « Mes favoris » (ou le titre saisi) + famille → « Mes favoris Auto/2R »
+  //   Lien  : « Tous mes favoris » (ou le libellé saisi) + famille → « Tous mes favoris Auto/2R »
+  // L'ancien libellé par défaut « Voir tous mes favoris » est traité comme le défaut de la maquette.
+  const famille = props.famille ? ` ${props.famille}` : "";
+  const familyTitle = `${props.title || DEFAULT_FAMILY_TITLE}${famille}`;
+  const baseLinkLabel =
+    !props.voirPlusLabel || props.voirPlusLabel === "Voir tous mes favoris"
+      ? DEFAULT_FAMILY_LINK_LABEL
+      : props.voirPlusLabel;
+  const familyLinkLabel = `${baseLinkLabel}${famille}`;
+
   // Page d'accueil : liste simple, sans étoile (donc sans suppression ni calque bloquant).
   if (props.displayMode === "accueil") {
     return (
@@ -132,16 +146,15 @@ const FavoritesView: React.FC<IFavoritesViewProps> = (props) => {
   return (
     <div className={classes.root} aria-busy={isBusy}>
       <div ref={contentRef}>
-        <Stack horizontal horizontalAlign="space-between" verticalAlign="center" className={classes.header}>
-          {props.title ? (
-            <Text as="h2" className={classes.title}>
-              {props.title}
-            </Text>
-          ) : (
-            <span />
+        {/* En-tête page famille (maquette p. 9, repère ⑥) : « Mes favoris Auto/2R » + « Tous mes favoris Auto/2R ». */}
+        <div className={classes.homeHeader}>
+          <h2 className={classes.homeTitle}>{familyTitle}</h2>
+          {props.voirPlusUrl && (
+            <a className={classes.homeLink} href={props.voirPlusUrl}>
+              {familyLinkLabel}
+            </a>
           )}
-          <VoirPlusButton pageUrl={props.voirPlusUrl} label={props.voirPlusLabel} disabled={isBusy} />
-        </Stack>
+        </div>
 
         {actionError && (
           <MessageBar
@@ -155,7 +168,7 @@ const FavoritesView: React.FC<IFavoritesViewProps> = (props) => {
           </MessageBar>
         )}
 
-        <FavoritesList locale={props.locale} />
+        <FavoritesList />
       </div>
 
       {isBusy && (
@@ -190,7 +203,30 @@ export const App: React.FC<IAppProps> = (props) => {
     () => new FavoritesService(props.context, props.listTitle, filterByFamily),
     [props.context, props.listTitle, filterByFamily]
   );
-  const locale = props.context.pageContext.cultureInfo.currentUICultureName || "fr-FR";
+
+  // Page famille : lecture de la famille de la page pour le titre « Mes favoris Auto/2R ».
+  const [famille, setFamille] = React.useState<string>("");
+  React.useEffect(() => {
+    if (!filterByFamily) {
+      setFamille("");
+      return;
+    }
+    let cancelled = false;
+    service
+      .getCurrentPageFamily()
+      .then((values) => {
+        if (!cancelled) {
+          setFamille(values.join(", "));
+        }
+      })
+      .catch((err: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("[App] getCurrentPageFamily", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [service, filterByFamily]);
 
   // "Voir tous" : URL saisie dans le volet si renseignée, sinon lien automatique vers la liste
   // des favoris filtrée (utilisateur connecté + famille de la page).
@@ -229,7 +265,7 @@ export const App: React.FC<IAppProps> = (props) => {
           title={props.title}
           voirPlusUrl={voirPlusUrl}
           voirPlusLabel={props.voirPlusLabel}
-          locale={locale}
+          famille={famille}
         />
       </FavoritesProvider>
     </ThemeProvider>
