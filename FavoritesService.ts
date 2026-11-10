@@ -39,16 +39,21 @@ export class FavoritesService implements IFavoritesService {
   private readonly _sp: SPFI;
   private readonly _context: WebPartContext;
   private readonly _listTitle: string;
+  /** true = page famille (filtre sur la famille de la page) ; false = page d'accueil (aucun filtre famille). */
+  private readonly _filterByFamily: boolean;
   /** Valeur(s) de la métadonnée de la page, lue(s) une seule fois et partagée(s) entre les appels. */
   private _pageValuesPromise: Promise<string[]> | undefined;
 
   /**
    * @param listTitle Titre de la liste des favoris (volet de propriétés) ;
    *                  "MesFavoris" par défaut si vide.
+   * @param filterByFamily true (défaut) = page famille : favoris filtrés sur la famille de la page ;
+   *                       false = page d'accueil : derniers favoris de l'utilisateur, sans filtre famille.
    */
-  constructor(context: WebPartContext, listTitle?: string) {
+  constructor(context: WebPartContext, listTitle?: string, filterByFamily: boolean = true) {
     this._context = context;
     this._listTitle = listTitle?.trim() || DEFAULT_FAVORITES_LIST_TITLE;
+    this._filterByFamily = filterByFamily;
     this._sp = spfi().using(SPFx(context));
   }
 
@@ -88,19 +93,27 @@ export class FavoritesService implements IFavoritesService {
   }
 
   public async getMyFavorites(top: number): Promise<IFavoriteItem[]> {
-    const pageValues = await this._getCurrentPageValues();
+    let filter: string;
 
-    // Page sans valeur de métadonnée (ou web part hors d'une page) : rien à afficher.
-    if (pageValues.length === 0) {
-      return [];
+    if (this._filterByFamily) {
+      // Page famille : filtre sur la famille de la page.
+      const pageValues = await this._getCurrentPageValues();
+
+      // Page sans valeur de métadonnée (ou web part hors d'une page) : rien à afficher.
+      if (pageValues.length === 0) {
+        return [];
+      }
+
+      const currentUser = await this._sp.web.currentUser();
+      const metadataFilter = pageValues
+        .map((value) => `${FAVORITES_FILTER_FIELD} eq ${odataString(value)}`)
+        .join(" or ");
+      filter = `AuthorId eq ${currentUser.Id} and (${metadataFilter})`;
+    } else {
+      // Page d'accueil : tous les favoris de l'utilisateur, sans filtre famille.
+      const currentUser = await this._sp.web.currentUser();
+      filter = `AuthorId eq ${currentUser.Id}`;
     }
-
-    const currentUser = await this._sp.web.currentUser();
-
-    const metadataFilter = pageValues
-      .map((value) => `${FAVORITES_FILTER_FIELD} eq ${odataString(value)}`)
-      .join(" or ");
-    const filter = `AuthorId eq ${currentUser.Id} and (${metadataFilter})`;
 
     const items = await this._sp.web.lists
       .getByTitle(this._listTitle)
@@ -116,13 +129,14 @@ export class FavoritesService implements IFavoritesService {
    * URL de la vue par défaut de la liste des favoris (ex. .../Lists/MesFavoris/AllItems.aspx),
    * filtrée comme le web part :
    *   - filtre 1 : Créé par = utilisateur connecté (nom affiché) ;
-   *   - filtre 2 : colonne famille = valeur(s) de la page actuelle (si la page en a une).
+   *   - filtre 2 : colonne famille = valeur(s) de la page actuelle (page famille uniquement).
    * Utilise la syntaxe de filtres d'URL des listes SharePoint (FilterField / FilterValue).
    */
   public async getAllFavoritesUrl(): Promise<string> {
     const [view, pageValues] = await Promise.all([
       this._sp.web.lists.getByTitle(this._listTitle).defaultView.select("ServerRelativeUrl")(),
-      this._getCurrentPageValues()
+      // Page d'accueil : pas de filtre famille dans le lien.
+      this._filterByFamily ? this._getCurrentPageValues() : Promise.resolve<string[]>([])
     ]);
 
     const params: string[] = [
