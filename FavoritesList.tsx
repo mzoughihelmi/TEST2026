@@ -15,6 +15,7 @@ const GMF_TEXTE = "#2e3a48"; // titres
 const GMF_TEXTE_SECONDAIRE = "#414c58"; // localisation
 const GMF_ENTETE = "#323e4b"; // en-têtes de colonnes
 const GMF_FOND_LIGNE = "#f5f8f8"; // une ligne sur deux
+const GMF_FOND_SURVOL = "#e8f0f1"; // ligne survolée (plus soutenu que le fond alterné)
 const GMF_SEPARATEUR = "#edebe9";
 
 const classes = mergeStyleSets({
@@ -40,7 +41,10 @@ const classes = mergeStyleSets({
   },
   row: {
     selectors: {
-      ":nth-child(odd) td": { backgroundColor: GMF_FOND_LIGNE }
+      ":nth-child(odd) td": { backgroundColor: GMF_FOND_LIGNE },
+      // Survol (ou focus clavier dans la ligne) : fond plus soutenu, déclaré après pour primer sur l'alternance.
+      ":hover td, :focus-within td": { backgroundColor: GMF_FOND_SURVOL },
+      ":hover a": { color: GMF_PETROLE }
     }
   },
   td: {
@@ -49,6 +53,7 @@ const classes = mergeStyleSets({
     padding: "12px 16px",
     borderBottom: `1px solid ${GMF_SEPARATEUR}`,
     verticalAlign: "middle",
+    transition: "background-color .1s ease",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap"
