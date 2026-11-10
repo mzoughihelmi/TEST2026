@@ -17,6 +17,7 @@
       "description": { "default": "Affiche les derniers favoris (page + lien) de l'utilisateur connecté." },
       "officeFabricIconFontName": "FavoriteStar",
       "properties": {
+        "displayMode": "famille",
         "title": "Mes favoris",
         "listTitle": "MesFavoris",
         "maxItems": 5,
