@@ -12,10 +12,14 @@ import { FavoritesProvider } from "../../context/FavoritesProvider";
 import { useFavorites } from "../../context/FavoritesContext";
 import { FavoritesService } from "../../services/FavoritesService";
 import { FavoritesList } from "../FavoritesList/FavoritesList";
+import { FavoritesCompactList } from "../FavoritesCompactList/FavoritesCompactList";
 import { VoirPlusButton } from "../VoirPlusButton/VoirPlusButton";
+import { FavoritesDisplayMode } from "../../models/IMesFavorisWebPartProps";
 
 export interface IAppProps {
   context: WebPartContext;
+  /** "accueil" = liste simple sans filtre famille ; "famille" = tableau filtré sur la famille de la page. */
+  displayMode: FavoritesDisplayMode;
   /** Thème de la section SharePoint (variantes de section : neutre, accentué...). */
   themeVariant: IReadonlyTheme | undefined;
   title: string;
@@ -27,6 +31,7 @@ export interface IAppProps {
 }
 
 interface IFavoritesViewProps {
+  displayMode: FavoritesDisplayMode;
   title: string;
   voirPlusUrl: string;
   voirPlusLabel: string;
@@ -76,8 +81,53 @@ const FavoritesView: React.FC<IFavoritesViewProps> = (props) => {
       overflow: "hidden",
       textOverflow: "ellipsis",
       whiteSpace: "nowrap"
+    },
+    // En-tête "page d'accueil" (maquette feuille de route p. 8) : titre + lien "Tous mes favoris".
+    homeHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      gap: 12,
+      marginBottom: 12
+    },
+    homeTitle: {
+      margin: 0,
+      fontSize: 16,
+      fontWeight: 600,
+      lineHeight: "22px",
+      color: "#323130",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    },
+    homeLink: {
+      fontSize: 12,
+      fontWeight: 600,
+      color: "#1f6b6f",
+      textDecoration: "none",
+      whiteSpace: "nowrap",
+      selectors: {
+        ":hover, :focus-visible": { textDecoration: "underline", color: "#1f6b6f" }
+      }
     }
   });
+
+  // Page d'accueil : liste simple, sans étoile (donc sans suppression ni calque bloquant).
+  if (props.displayMode === "accueil") {
+    return (
+      <div className={classes.root}>
+        <div className={classes.homeHeader}>
+          {props.title ? <h2 className={classes.homeTitle}>{props.title}</h2> : <span />}
+          {props.voirPlusUrl && (
+            <a className={classes.homeLink} href={props.voirPlusUrl}>
+              {props.voirPlusLabel}
+            </a>
+          )}
+        </div>
+        <FavoritesCompactList />
+      </div>
+    );
+  }
 
   return (
     <div className={classes.root} aria-busy={isBusy}>
@@ -133,10 +183,12 @@ const FavoritesView: React.FC<IFavoritesViewProps> = (props) => {
  * PnPjs et l'injecte dans le FavoritesProvider.
  */
 export const App: React.FC<IAppProps> = (props) => {
-  // Le service est recréé si le contexte ou la liste configurée change → rechargement automatique.
+  // Le service est recréé si le contexte, la liste ou l'emplacement change → rechargement automatique.
+  // Accueil : pas de filtre famille ; Famille : filtre sur la famille de la page.
+  const filterByFamily = props.displayMode !== "accueil";
   const service = React.useMemo(
-    () => new FavoritesService(props.context, props.listTitle),
-    [props.context, props.listTitle]
+    () => new FavoritesService(props.context, props.listTitle, filterByFamily),
+    [props.context, props.listTitle, filterByFamily]
   );
   const locale = props.context.pageContext.cultureInfo.currentUICultureName || "fr-FR";
 
@@ -173,6 +225,7 @@ export const App: React.FC<IAppProps> = (props) => {
     >
       <FavoritesProvider service={service} maxItems={props.maxItems}>
         <FavoritesView
+          displayMode={props.displayMode}
           title={props.title}
           voirPlusUrl={voirPlusUrl}
           voirPlusLabel={props.voirPlusLabel}
